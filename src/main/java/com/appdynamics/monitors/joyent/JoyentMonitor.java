@@ -1,0 +1,101 @@
+package com.appdynamics.monitors.joyent;
+
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.singularity.ee.agent.systemagent.api.AManagedMonitor;
+import com.singularity.ee.agent.systemagent.api.MetricWriter;
+import com.singularity.ee.agent.systemagent.api.TaskExecutionContext;
+import com.singularity.ee.agent.systemagent.api.TaskOutput;
+import com.singularity.ee.agent.systemagent.api.exception.TaskExecutionException;
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+import org.apache.log4j.Logger;
+
+public class JoyentMonitor extends AManagedMonitor {
+    private static final Logger LOG = Logger.getLogger(JoyentMonitor.class);
+
+    public TaskOutput execute(Map<String, String> taskArguments, TaskExecutionContext taskExecutionContext) throws TaskExecutionException {
+
+        String details = JoyentMonitor.class.getPackage().getImplementationTitle();
+        String msg = "Using Monitor Version [" + details + "]";
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Starting Joyent Monitor");
+            LOG.debug(msg);
+        }
+
+        String identity = taskArguments.get("identity");
+        String credential = taskArguments.get("credential");
+        String privateKey = taskArguments.get("joyent_private_key");
+        String keyName = taskArguments.get("joyent_key_name");
+
+        if (identity == null || credential == null || privateKey == null || keyName == null ||
+                identity.length() <= 0 || credential.length() <= 0 || privateKey.length() <= 0 || keyName.length() <= 0) {
+            LOG.error("Invalid or no arguments provided. Please provide required arguments in monitor.xml");
+            throw new TaskExecutionException("Invalid or no arguments provided. Please provide required arguments in monitor.xml");
+        }
+
+
+        MachineStatsCollector machineStatsCollector = new MachineStatsCollector();
+        Map<String, ?> machineStats = machineStatsCollector.collectStats(identity, keyName, privateKey);
+        printMetric(machineStats);
+
+        String instrumentXMLPath = taskArguments.get("instrumentation_file_path");
+        Instrumentation instrumentation = null;
+        if (instrumentXMLPath != null) {
+            instrumentation = parseAndPopulate(instrumentXMLPath);
+        }
+
+        if (instrumentation != null && instrumentation.getModule() != null && instrumentation.getModule().size() != 0) {
+            String maxInstrumentationsToRun = taskArguments.get("max_instrumentations_to_run");
+            Integer instrumentationsToRun = 0;
+            try {
+                instrumentationsToRun = Integer.valueOf(maxInstrumentationsToRun);
+            } catch (ArithmeticException e) {
+                LOG.error("Invalid number provided for max_instrumentations_to_run", e);
+            }
+            if (instrumentationsToRun > 0) {
+                InstrumentationStats instrumentationStats = new InstrumentationStats(instrumentation, instrumentationsToRun);
+                Map<String, ?> instrumentationStatsMap = instrumentationStats.collectStats(identity, keyName, privateKey);
+                printMetric(instrumentationStatsMap);
+            }
+        } else {
+            LOG.info("No instrumentations defined to run");
+        }
+
+
+        return new TaskOutput("JoyentMonitor completed successfully");
+    }
+
+    private Instrumentation parseAndPopulate(String instrumentXMLPath) {
+        XmlMapper xmlMapper = new XmlMapper();
+        Instrumentation instrumentation = null;
+        try {
+            instrumentation = xmlMapper.readValue(new File(instrumentXMLPath), Instrumentation.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return instrumentation;
+    }
+
+    private void printMetric(Map<String, ?> metrics) {
+
+        for (Map.Entry<String, ?> metric : metrics.entrySet()) {
+            MetricWriter metricWriter = super.getMetricWriter(metric.getKey(), MetricWriter.METRIC_AGGREGATION_TYPE_AVERAGE, MetricWriter.METRIC_TIME_ROLLUP_TYPE_AVERAGE, MetricWriter.METRIC_CLUSTER_ROLLUP_TYPE_COLLECTIVE
+            );
+            Object metricValue = metric.getValue();
+            if (metricValue instanceof Double) {
+                metricWriter.printMetric(String.valueOf(Math.round((Double) metricValue)));
+            } else if (metricValue instanceof Float) {
+                metricWriter.printMetric(String.valueOf(Math.round((Float) metricValue)));
+            } else {
+                metricWriter.printMetric(String.valueOf(metricValue));
+            }
+        }
+    }
+
+    /*public static void main(String[] args) {
+        JoyentMonitor joyentMonitor = new JoyentMonitor();
+        Instrumentation instrumentation = joyentMonitor.parseAndPopulate("/home/satish/AppDynamics/Code/extensions/joyent-monitoring-extension/src/main/resources/config/instrumentations.xml");
+        System.out.println(instrumentation);
+    }*/
+}

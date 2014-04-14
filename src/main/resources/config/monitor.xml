@@ -1,0 +1,28 @@
+<monitor>
+        <name>JoyentMonitor</name>
+        <type>managed</type>
+        <description>Joyent monitor</description>
+        <monitor-configuration></monitor-configuration>
+        <monitor-run-task>
+                <execution-style>periodic</execution-style>
+                <execution-frequency-in-seconds>60</execution-frequency-in-seconds>
+                <name>Joyent Monitor Run Task</name>
+                <display-name>Joyent Monitor Task</display-name>
+                <description>Joyent Monitor Task</description>
+                <type>java</type>
+                <execution-timeout-in-secs>60</execution-timeout-in-secs>
+                <task-arguments>
+                    <argument name="identity" is-required="true" default-value="rgiroti@appdynamics.com" />
+                    <argument name="credential" is-required="true" default-value="welcome1" />
+                    <argument name="joyent_private_key" is-required="true" default-value="/home/satish/AppDynamics/Joyent/appd-joyent_id_rsa" />
+                    <argument name="joyent_key_name" is-required="true" default-value="appd-joyent" />
+                    <argument name="instrumentation_file_path" is-required="false" default-value="instrumentations.xml" />
+                    <!--Joyent by default supports only 10 instrumentations. If your account has more, specify that number here -->
+                    <argument name="max_instrumentations_to_run" is-required="false" default-value="10" />
+		       </task-arguments>
+                <java-task>
+                    <classpath>joyent-monitoring-extension.jar;</classpath>
+                        <impl-class>com.appdynamics.monitors.azure.AzureMonitor</impl-class>
+                </java-task>
+        </monitor-run-task>
+</monitor>
