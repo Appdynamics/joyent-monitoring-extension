@@ -20,19 +20,14 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>1.4.7</version>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <version>2.1.5</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-xml</artifactId>
-            <version>2.1.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.woodstox</groupId>
-            <artifactId>woodstox-core-asl</artifactId>
-            <version>4.1.4</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -45,9 +40,10 @@
             <version>140</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.3.3</version>
+            <groupId>commons-httpclient</groupId>
+            <artifactId>commons-httpclient</artifactId>
+            <version>3.1</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
@@ -127,6 +123,7 @@
                                 <mkdir dir="${target.dir}"/>
                                 <copy todir="${target.dir}">
                                     <fileset dir="src/main/resources/config" includes="monitor.xml"/>
+                                    <fileset dir="src/main/resources/config" includes="instrumentations.xml"/>
                                 </copy>
                                 <copy todir="${target.dir}">
                                     <fileset dir="${build.directory}" includes="${project.artifactId}.${project.packaging}"/>

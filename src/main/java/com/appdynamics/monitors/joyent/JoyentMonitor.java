@@ -1,13 +1,12 @@
 package com.appdynamics.monitors.joyent;
 
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.singularity.ee.agent.systemagent.api.AManagedMonitor;
 import com.singularity.ee.agent.systemagent.api.MetricWriter;
 import com.singularity.ee.agent.systemagent.api.TaskExecutionContext;
 import com.singularity.ee.agent.systemagent.api.TaskOutput;
 import com.singularity.ee.agent.systemagent.api.exception.TaskExecutionException;
+import com.thoughtworks.xstream.XStream;
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 import org.apache.log4j.Logger;
 
@@ -67,13 +66,13 @@ public class JoyentMonitor extends AManagedMonitor {
     }
 
     private Instrumentation parseAndPopulate(String instrumentXMLPath) {
-        XmlMapper xmlMapper = new XmlMapper();
-        Instrumentation instrumentation = null;
-        try {
-            instrumentation = xmlMapper.readValue(new File(instrumentXMLPath), Instrumentation.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        XStream xstream = new XStream();
+        xstream.alias("instrumentations", Instrumentation.class);
+        xstream.alias("module", Module.class);
+        xstream.alias("stat", Stat.class);
+        xstream.autodetectAnnotations(true);
+        Instrumentation instrumentation = (Instrumentation) xstream.fromXML(new File(instrumentXMLPath));
         return instrumentation;
     }
 
@@ -93,9 +92,9 @@ public class JoyentMonitor extends AManagedMonitor {
         }
     }
 
-    /*public static void main(String[] args) {
+    public static void main(String[] args) {
         JoyentMonitor joyentMonitor = new JoyentMonitor();
-        Instrumentation instrumentation = joyentMonitor.parseAndPopulate("/home/satish/AppDynamics/Code/extensions/joyent-monitoring-extension/src/main/resources/config/instrumentations.xml");
+        Instrumentation instrumentation = joyentMonitor.parseAndPopulate("/home/satish/AppDynamics/Code/extensions/joyent-monitoring-extension/src/main/resources/config/instrumentations1.xml");
         System.out.println(instrumentation);
-    }*/
+    }
 }

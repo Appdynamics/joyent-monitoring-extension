@@ -3,30 +3,28 @@ package com.appdynamics.monitors.joyent;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.http.HttpException;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpMethodBase;
+import org.apache.commons.httpclient.NameValuePair;
+import org.apache.commons.httpclient.methods.DeleteMethod;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.log4j.Logger;
 import org.bouncycastle.openssl.PEMReader;
 
@@ -34,23 +32,23 @@ public class Executor {
 
     private static final Logger LOG = Logger.getLogger(Executor.class);
 
+    static {
+        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+    }
+
     public String executeGetRequest(String url, String user, String keyName, String privateKeyPath) throws HttpException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Executing GET request " + url);
         }
-        CloseableHttpClient httpClient = HttpClients.createDefault();
+        HttpClient client = new HttpClient();
+        GetMethod req = new GetMethod(url);
         try {
-            HttpGet req = new HttpGet(url);
             String date = getCurrentTime();
             addDefaultHeaders(req, date);
             addAuthHeader(req, privateKeyPath, user, keyName, date);
-            return executeRequest(httpClient, req);
+            return executeRequest(client, req);
         } finally {
-            try {
-                httpClient.close();
-            } catch (IOException e) {
-                LOG.error("Exception while closing the client", e);
-            }
+            req.releaseConnection();
         }
     }
 
@@ -58,20 +56,16 @@ public class Executor {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Executing POST request " + url);
         }
-        CloseableHttpClient httpClient = HttpClients.createDefault();
+        HttpClient client = new HttpClient();
+        PostMethod req = new PostMethod(url);
+        setQueryParameters(req, parameters);
         try {
-            URI uri = buildURI(url, parameters);
-            HttpPost req = new HttpPost(uri);
             String date = getCurrentTime();
             addDefaultHeaders(req, date);
             addAuthHeader(req, privateKeyPath, user, keyName, date);
-            return executeRequest(httpClient, req);
+            return executeRequest(client, req);
         } finally {
-            try {
-                httpClient.close();
-            } catch (IOException e) {
-                LOG.error("Exception while closing the client", e);
-            }
+            req.releaseConnection();
         }
     }
 
@@ -79,66 +73,55 @@ public class Executor {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Executing DELETE request " + deleteURL);
         }
-        CloseableHttpClient httpClient = HttpClients.createDefault();
+        HttpClient client = new HttpClient();
+        DeleteMethod req = new DeleteMethod(deleteURL);
         try {
-            HttpDelete req = new HttpDelete(deleteURL);
             String date = getCurrentTime();
             addDefaultHeaders(req, date);
             addAuthHeader(req, privateKey, identity, keyName, date);
-            return executeRequest(httpClient, req);
+            return executeRequest(client, req);
         } finally {
-            try {
-                httpClient.close();
-            } catch (IOException e) {
-                LOG.error("Exception while closing the client", e);
-            }
+            req.releaseConnection();
         }
     }
 
-    private String executeRequest(CloseableHttpClient httpClient, HttpRequestBase req) throws HttpException {
-        HttpResponse response = null;
+    private String executeRequest(HttpClient httpClient, HttpMethodBase req) throws HttpException {
         try {
-            response = httpClient.execute(req);
-            if (response.getStatusLine().getStatusCode() >= 300) {
-                throw new HttpException(EntityUtils.toString(response.getEntity()));
+            int statusCode = httpClient.executeMethod(req);
+            if (statusCode >= 300) {
+                throw new HttpException(req.getResponseBodyAsString());
             }
-            if (response.getStatusLine().getStatusCode() != 204) {  //No Resp
-                return EntityUtils.toString(response.getEntity());
-            } else {
+            if (statusCode == 204) { //No Resp 
                 return "";
             }
+            return req.getResponseBodyAsString();
         } catch (IOException e) {
             LOG.error("Exception while executing request ", e);
             throw new HttpException("Exception while executing request ", e);
         }
     }
 
-    private URI buildURI(String url, Map<String, String> parameters) throws HttpException {
-        try {
-            URIBuilder builder = new URIBuilder(url);
-            for (Map.Entry<String, String> param : parameters.entrySet()) {
-                builder.setParameter(param.getKey(), param.getValue());
-            }
-            return builder.build();
-        } catch (URISyntaxException e) {
-            LOG.error("Exception while build URI", e);
-            throw new HttpException("Exception while build URI", e);
+    private void setQueryParameters(HttpMethodBase req, Map<String, String> parameters) throws HttpException {
+        List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
+        for (Map.Entry<String, String> param : parameters.entrySet()) {
+            nameValuePairs.add(new NameValuePair(param.getKey(), param.getValue()));
         }
+        req.setQueryString(nameValuePairs.toArray(new NameValuePair[parameters.size()]));
     }
 
-    private void addAuthHeader(HttpRequestBase req, String privateKeyPath, String user, String keyName, String date) {
+    private void addAuthHeader(HttpMethodBase req, String privateKeyPath, String user, String keyName, String date) {
         File file = new File(privateKeyPath);
         String digest = signSHA256withRSA(file, date);
 
         String authInfo = "Signature keyId=\"/" + user + "/keys/" + keyName
                 + "\",algorithm=\"rsa-sha256\" " + digest;
-        req.addHeader("Authorization", authInfo);
+        req.addRequestHeader("Authorization", authInfo);
     }
 
-    private void addDefaultHeaders(HttpRequestBase req, String date) {
-        req.addHeader("Date", date);
-        req.addHeader("Accept", "application/json");
-        req.addHeader("X-Api-Version", "~6.5");
+    private void addDefaultHeaders(HttpMethodBase req, String date) {
+        req.addRequestHeader("Date", date);
+        req.addRequestHeader("Accept", "application/json");
+        req.addRequestHeader("X-Api-Version", "~6.5");
     }
 
 
@@ -153,7 +136,7 @@ public class Executor {
             Signature signature = Signature.getInstance("SHA256withRSA");
             signature.initSign(getPrivateKey(privateKey));
             signature.update(data.getBytes());
-            return Base64.encodeBase64String(signature.sign());
+            return new String(Base64.encodeBase64(signature.sign()));
         } catch (NoSuchAlgorithmException e) {
             LOG.error("Exception while signing ", e);
             throw new RuntimeException("Exception while signing ", e);

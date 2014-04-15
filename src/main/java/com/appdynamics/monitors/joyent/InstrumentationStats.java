@@ -9,7 +9,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.http.HttpException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.apache.commons.httpclient.HttpException;
 import org.apache.log4j.Logger;
 
 public class InstrumentationStats extends StatsCollector {
@@ -42,6 +44,13 @@ public class InstrumentationStats extends StatsCollector {
         //Create instrumentation
         for (Module module : modules) {
             createInstrumentation(module, identity, keyName, privateKey);
+        }
+
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        try {
+            countDownLatch.await(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            LOG.error("Failed to wait", e);
         }
 
         Map<String, String> statsMap = new LinkedHashMap<String, String>();

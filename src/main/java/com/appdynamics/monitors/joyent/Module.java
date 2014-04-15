@@ -1,16 +1,22 @@
 package com.appdynamics.monitors.joyent;
 
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.thoughtworks.xstream.annotations.XStreamAlias;
+import com.thoughtworks.xstream.annotations.XStreamAsAttribute;
+import com.thoughtworks.xstream.annotations.XStreamImplicit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@XStreamAlias("module")
 public class Module {
 
+
+    @XStreamAlias("name")
+    @XStreamAsAttribute
     private String name;
 
-    @JacksonXmlElementWrapper(useWrapping = false)
+    @XStreamImplicit(itemFieldName="stat")
     private List<Stat> stat;
 
     public String getName() {
@@ -39,14 +45,20 @@ public class Module {
         return stat;
     }
 
-    public void setStat() {
+    public void setStat(List<Stat> stat) {
         this.stat = stat;
     }
 }
 
+@XStreamAlias("stat")
 class Stat {
+
+    @XStreamAlias("name")
     private String name;
+    @XStreamAlias("label")
     private String label;
+    @XStreamAlias("enabled")
+    @XStreamAsAttribute
     private boolean enabled;
     private Map<String, Integer> instrumentationIdPerZone;
     private Map<String, String> instrumentationValuePerZone;
@@ -70,7 +82,7 @@ class Stat {
     public boolean isEnabled() {
         return enabled;
     }
-
+    
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
