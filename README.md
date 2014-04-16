@@ -87,7 +87,7 @@ This extension works only with the standalone machine agent.
 
 ###instrumentations.xml
 
-<b>All the instrumentations in instrumentations.xml are defined by Joyent. For more info visit all http://apidocs.joyent.com/cloudapi/#DescribeAnalytics 
+<b>All the instrumentations in instrumentations.xml are defined by Joyent. For more info visit http://apidocs.joyent.com/cloudapi/#DescribeAnalytics 
 
 | Param | Description |
 | ---- | ---- |
