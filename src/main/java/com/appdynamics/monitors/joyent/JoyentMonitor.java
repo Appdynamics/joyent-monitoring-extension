@@ -23,12 +23,11 @@ public class JoyentMonitor extends AManagedMonitor {
         }
 
         String identity = taskArguments.get("identity");
-        String credential = taskArguments.get("credential");
         String privateKey = taskArguments.get("joyent_private_key");
         String keyName = taskArguments.get("joyent_key_name");
 
-        if (identity == null || credential == null || privateKey == null || keyName == null ||
-                identity.length() <= 0 || credential.length() <= 0 || privateKey.length() <= 0 || keyName.length() <= 0) {
+        if (identity == null || privateKey == null || keyName == null ||
+                identity.length() <= 0 || privateKey.length() <= 0 || keyName.length() <= 0) {
             LOG.error("Invalid or no arguments provided. Please provide required arguments in monitor.xml");
             throw new TaskExecutionException("Invalid or no arguments provided. Please provide required arguments in monitor.xml");
         }

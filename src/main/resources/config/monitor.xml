@@ -13,7 +13,6 @@
                 <execution-timeout-in-secs>60</execution-timeout-in-secs>
                 <task-arguments>
                     <argument name="identity" is-required="true" default-value="rgiroti@appdynamics.com" />
-                    <argument name="credential" is-required="true" default-value="welcome1" />
                     <argument name="joyent_private_key" is-required="true" default-value="/home/satish/AppDynamics/Joyent/appd-joyent_id_rsa" />
                     <argument name="joyent_key_name" is-required="true" default-value="appd-joyent" />
                     <argument name="instrumentation_file_path" is-required="false" default-value="instrumentations.xml" />
@@ -22,7 +21,7 @@
 		       </task-arguments>
                 <java-task>
                     <classpath>joyent-monitoring-extension.jar;lib/bcprov-jdk15-140.jar;lib/jackson-annotations-2.1.5.jar;lib/jackson-core-2.1.5.jar;lib/jackson-databind-2.1.5.jar;lib/xmlpull-1.1.3.1.jar;lib/xpp3_min-1.1.4c.jar;lib/xstream-1.4.7.jar;</classpath>
-                    <impl-class>com.appdynamics.monitors.azure.AzureMonitor</impl-class>
+                    <impl-class>com.appdynamics.monitors.joyent.JoyentMonitor</impl-class>
                 </java-task>
         </monitor-run-task>
 </monitor>
