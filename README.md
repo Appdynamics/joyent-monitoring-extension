@@ -2,7 +2,7 @@
 
 ##Use Case
 
-The Joyent Monitoring Extension collects the stats from Joyent cloud provider and reports them on the Controller.
+The Joyent Monitoring Extension collects the stats from Joyent cloud provider and reports them to the AppDynamics Controller.
 
 This extension works only with the standalone machine agent.
 
