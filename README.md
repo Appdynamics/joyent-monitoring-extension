@@ -25,7 +25,7 @@ This extension works only with the standalone machine agent.
 </tr>
 <tr>
 <td class='confluenceTd'> src/main/java </td>
-<td class='confluenceTd'> Contains source code to Joyent MOnitoring Extension  </td>
+<td class='confluenceTd'> Contains source code to Joyent Monitoring Extension  </td>
 </tr>
 <tr>
 <td class='confluenceTd'> src/main/resources </td>
