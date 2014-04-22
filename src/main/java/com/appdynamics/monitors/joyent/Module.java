@@ -17,7 +17,7 @@ public class Module {
     private String name;
 
     @XStreamImplicit(itemFieldName="stat")
-    private List<Stat> stat;
+    private List<Stat> stats;
 
     public String getName() {
         return name;
@@ -28,25 +28,25 @@ public class Module {
     }
 
     public void addStat(Stat statToAdd) {
-        if (stat == null) {
-            stat = new ArrayList<Stat>();
+        if (stats == null) {
+            stats = new ArrayList<Stat>();
         }
-        stat.add(statToAdd);
+        stats.add(statToAdd);
     }
 
     public void addStats(List<Stat> stats) {
-        if (stat == null) {
-            stat = new ArrayList<Stat>();
+        if (stats == null) {
+            stats = new ArrayList<Stat>();
         }
-        stat.addAll(stats);
+        stats.addAll(stats);
     }
 
     public List<Stat> getStat() {
-        return stat;
+        return stats;
     }
 
-    public void setStat(List<Stat> stat) {
-        this.stat = stat;
+    public void setStat(List<Stat> stats) {
+        this.stats = stats;
     }
 }
 

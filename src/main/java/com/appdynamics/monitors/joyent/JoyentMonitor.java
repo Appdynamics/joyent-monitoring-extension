@@ -17,14 +17,12 @@ public class JoyentMonitor extends AManagedMonitor {
 
         String details = JoyentMonitor.class.getPackage().getImplementationTitle();
         String msg = "Using Monitor Version [" + details + "]";
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Starting Joyent Monitor");
-            LOG.debug(msg);
-        }
+        LOG.info(msg);
+        System.out.println(msg);
 
         String identity = taskArguments.get("identity");
-        String privateKey = taskArguments.get("joyent_private_key");
-        String keyName = taskArguments.get("joyent_key_name");
+        String privateKey = taskArguments.get("joyent-private-key");
+        String keyName = taskArguments.get("joyent-key-name");
 
         if (identity == null || privateKey == null || keyName == null ||
                 identity.length() <= 0 || privateKey.length() <= 0 || keyName.length() <= 0) {
@@ -37,19 +35,19 @@ public class JoyentMonitor extends AManagedMonitor {
         Map<String, ?> machineStats = machineStatsCollector.collectStats(identity, keyName, privateKey);
         printMetric(machineStats);
 
-        String instrumentXMLPath = taskArguments.get("instrumentation_file_path");
+        String instrumentXMLPath = taskArguments.get("instrumentation-file-path");
         Instrumentation instrumentation = null;
         if (instrumentXMLPath != null) {
             instrumentation = parseAndPopulate(instrumentXMLPath);
         }
 
-        if (instrumentation != null && instrumentation.getModule() != null && instrumentation.getModule().size() != 0) {
-            String maxInstrumentationsToRun = taskArguments.get("max_instrumentations_to_run");
+        if (instrumentation != null && instrumentation.getModules() != null && instrumentation.getModules().size() != 0) {
+            String maxInstrumentationsToRun = taskArguments.get("max-instrumentations-to-run");
             Integer instrumentationsToRun = 0;
             try {
                 instrumentationsToRun = Integer.valueOf(maxInstrumentationsToRun);
-            } catch (ArithmeticException e) {
-                LOG.error("Invalid number provided for max_instrumentations_to_run", e);
+            } catch (NumberFormatException e) {
+                LOG.error("Invalid number provided for max-instrumentations-to-run", e);
             }
             if (instrumentationsToRun > 0) {
                 InstrumentationStats instrumentationStats = new InstrumentationStats(instrumentation, instrumentationsToRun);

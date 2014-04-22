@@ -8,13 +8,13 @@ import java.util.List;
 public class Instrumentation {
 
     @XStreamImplicit(itemFieldName="module")
-    private List<Module> module;
+    private List<Module> modules;
 
-    public List<Module> getModule() {
-        return module;
+    public List<Module> getModules() {
+        return modules;
     }
 
-    public void setModule(List<Module> module) {
-        this.module = module;
+    public void setModule(List<Module> modules) {
+        this.modules = modules;
     }
 }
