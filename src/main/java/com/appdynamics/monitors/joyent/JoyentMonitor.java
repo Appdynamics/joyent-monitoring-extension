@@ -13,12 +13,14 @@ import org.apache.log4j.Logger;
 public class JoyentMonitor extends AManagedMonitor {
     private static final Logger LOG = Logger.getLogger(JoyentMonitor.class);
 
-    public TaskOutput execute(Map<String, String> taskArguments, TaskExecutionContext taskExecutionContext) throws TaskExecutionException {
-
+    public JoyentMonitor() {
         String details = JoyentMonitor.class.getPackage().getImplementationTitle();
         String msg = "Using Monitor Version [" + details + "]";
         LOG.info(msg);
         System.out.println(msg);
+    }
+
+    public TaskOutput execute(Map<String, String> taskArguments, TaskExecutionContext taskExecutionContext) throws TaskExecutionException {
 
         String identity = taskArguments.get("identity");
         String privateKey = taskArguments.get("joyent-private-key");
