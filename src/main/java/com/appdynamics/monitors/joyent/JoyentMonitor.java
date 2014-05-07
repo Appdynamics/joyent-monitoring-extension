@@ -5,8 +5,6 @@ import com.singularity.ee.agent.systemagent.api.MetricWriter;
 import com.singularity.ee.agent.systemagent.api.TaskExecutionContext;
 import com.singularity.ee.agent.systemagent.api.TaskOutput;
 import com.singularity.ee.agent.systemagent.api.exception.TaskExecutionException;
-import com.thoughtworks.xstream.XStream;
-import java.io.File;
 import java.util.Map;
 import org.apache.log4j.Logger;
 
@@ -21,7 +19,7 @@ public class JoyentMonitor extends AManagedMonitor {
     }
 
     public TaskOutput execute(Map<String, String> taskArguments, TaskExecutionContext taskExecutionContext) throws TaskExecutionException {
-
+        LOG.info("Executing Joyent Monitoring extension");
         String identity = taskArguments.get("identity");
         String privateKey = taskArguments.get("joyent-private-key");
         String keyName = taskArguments.get("joyent-key-name");
@@ -37,42 +35,11 @@ public class JoyentMonitor extends AManagedMonitor {
         Map<String, ?> machineStats = machineStatsCollector.collectStats(identity, keyName, privateKey);
         printMetric(machineStats);
 
-        String instrumentXMLPath = taskArguments.get("instrumentation-file-path");
-        Instrumentation instrumentation = null;
-        if (instrumentXMLPath != null) {
-            instrumentation = parseAndPopulate(instrumentXMLPath);
-        }
+        InstrumentationStats instrumentationStats = new InstrumentationStats();
+        Map<String, ?> instrumentationStatsMap = instrumentationStats.collectStats(identity, keyName, privateKey);
+        printMetric(instrumentationStatsMap);
 
-        if (instrumentation != null && instrumentation.getModules() != null && instrumentation.getModules().size() != 0) {
-            String maxInstrumentationsToRun = taskArguments.get("max-instrumentations-to-run");
-            Integer instrumentationsToRun = 0;
-            try {
-                instrumentationsToRun = Integer.valueOf(maxInstrumentationsToRun);
-            } catch (NumberFormatException e) {
-                LOG.error("Invalid number provided for max-instrumentations-to-run", e);
-            }
-            if (instrumentationsToRun > 0) {
-                InstrumentationStats instrumentationStats = new InstrumentationStats(instrumentation, instrumentationsToRun);
-                Map<String, ?> instrumentationStatsMap = instrumentationStats.collectStats(identity, keyName, privateKey);
-                printMetric(instrumentationStatsMap);
-            }
-        } else {
-            LOG.info("No instrumentations defined to run");
-        }
-
-
-        return new TaskOutput("JoyentMonitor completed successfully");
-    }
-
-    private Instrumentation parseAndPopulate(String instrumentXMLPath) {
-
-        XStream xstream = new XStream();
-        xstream.alias("instrumentations", Instrumentation.class);
-        xstream.alias("module", Module.class);
-        xstream.alias("stat", Stat.class);
-        xstream.autodetectAnnotations(true);
-        Instrumentation instrumentation = (Instrumentation) xstream.fromXML(new File(instrumentXMLPath));
-        return instrumentation;
+        return new TaskOutput("Joyent Monitor completed successfully");
     }
 
     private void printMetric(Map<String, ?> metrics) {
@@ -91,9 +58,8 @@ public class JoyentMonitor extends AManagedMonitor {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws TaskExecutionException {
         JoyentMonitor joyentMonitor = new JoyentMonitor();
-        Instrumentation instrumentation = joyentMonitor.parseAndPopulate("/home/satish/AppDynamics/Code/extensions/joyent-monitoring-extension/src/main/resources/config/instrumentations1.xml");
-        System.out.println(instrumentation);
+        joyentMonitor.execute(null, null);
     }
 }

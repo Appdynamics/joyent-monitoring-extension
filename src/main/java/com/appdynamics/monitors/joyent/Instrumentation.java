@@ -1,20 +1,49 @@
 package com.appdynamics.monitors.joyent;
 
-import com.thoughtworks.xstream.annotations.XStreamAlias;
-import com.thoughtworks.xstream.annotations.XStreamImplicit;
-import java.util.List;
-
-@XStreamAlias("instrumentations")
 public class Instrumentation {
+    private String id;
+    private String zone;
+    private String module;
+    private String stat;
+    private String value;
 
-    @XStreamImplicit(itemFieldName="module")
-    private List<Module> modules;
-
-    public List<Module> getModules() {
-        return modules;
+    public String getId() {
+        return id;
     }
 
-    public void setModule(List<Module> modules) {
-        this.modules = modules;
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getZone() {
+        return zone;
+    }
+
+    public void setZone(String zone) {
+        this.zone = zone;
+    }
+
+    public String getModule() {
+        return module;
+    }
+
+    public void setModule(String module) {
+        this.module = module;
+    }
+
+    public String getStat() {
+        return stat;
+    }
+
+    public void setStat(String stat) {
+        this.stat = stat;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
     }
 }

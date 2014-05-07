@@ -13,10 +13,11 @@ public class MachineStatsCollector extends StatsCollector {
 
     private static final String INSTANCE_URL = "https://%s.api.joyentcloud.com/%s/machines";
 
-    private static final String METRIC_PATH = "Custom Metrics|Joyent|%s|Instances|%s|";
+    private static final String METRIC_PATH = "Custom Metrics|Joyent|Instances|%s|%s|";
 
     @Override
     public Map<String, ?> collectStats(String identity, String keyName, String privateKey) {
+        LOG.info("Fetching machine stats");
         Map<String, Number> instanceStatsMap = new LinkedHashMap<String, Number>();
         try {
             Iterator<String> allDatacenters = getAllDatacenters(identity, keyName, privateKey);

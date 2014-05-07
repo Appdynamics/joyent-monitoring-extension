@@ -3,13 +3,13 @@ package com.appdynamics.monitors.joyent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.log4j.Logger;
 
@@ -17,137 +17,145 @@ public class InstrumentationStats extends StatsCollector {
 
     private static final Logger LOG = Logger.getLogger(InstrumentationStats.class);
 
-    private static final String CREATE_INSTRUMENTATION_URL = "https://%s.api.joyentcloud.com/%s/analytics/instrumentations";
+    private static final String LIST_INSTRUMENTATION_URL = "https://%s.api.joyentcloud.com/%s/analytics/instrumentations";
     private static final String GET_INSTRUMENTATION_URL = "https://%s.api.joyentcloud.com/%s/analytics/instrumentations/%s/value/raw";
-    private static final String DELETE_INSTRUMENTATION_URL = "https://%s.api.joyentcloud.com/%s/analytics/instrumentations/%s";
-
-    private static final String METRIC_PATH = "Custom Metrics|Joyent|Instrumentation|%s|%s|%s|"; //Module Name|Stat Name|Zone
-
-    private Instrumentation instrumentation;
-    private Integer instrumentationsToRun;
-
-    public InstrumentationStats(Instrumentation instrumentation, Integer maxInstrumentationsToRun) {
-        this.instrumentation = instrumentation;
-        this.instrumentationsToRun = maxInstrumentationsToRun;
-    }
+    private static final String METRIC_PATH = "Custom Metrics|Joyent|Instrumentation|%s|%s|%s"; //Module Name|Stat Name|Zone
 
     @Override
     public Map<String, ?> collectStats(String identity, String keyName, String privateKey) {
-        List<Module> modules = instrumentation.getModules();
-        Map<String, String> instrumentationStats = createInstrumentationAndGetStats(modules, identity, keyName, privateKey);
+        LOG.info("Fetching instrumentation stats");
+        Map<String, String> instrumentationStats = getInstrumentationsWithStats(identity, keyName, privateKey);
         return instrumentationStats;
     }
 
-    private Map<String, String> createInstrumentationAndGetStats(List<Module> modules, String identity, String keyName, String privateKey) {
+    private Map<String, String> getInstrumentationsWithStats(String identity, String keyName, String privateKey) {
 
-        //Create instrumentation
-        for (Module module : modules) {
-            createInstrumentation(module, identity, keyName, privateKey);
+        List<Instrumentation> instrumentations = listInstrumentations(identity, keyName, privateKey);
+
+        populateInstrumentationValue(instrumentations, identity, keyName, privateKey);
+
+        Map<String, String> statsMap = buildStatsMap(instrumentations);
+
+        return statsMap;
+    }
+
+    /**
+     * Fetches instrumentations from Joyent
+     *
+     * @param identity
+     * @param keyName
+     * @param privateKey
+     * @return list of instrumentations
+     */
+    private List<Instrumentation> listInstrumentations(String identity, String keyName, String privateKey) {
+
+        Iterator<String> allDatacentersItr = getAllDatacenters(identity, keyName, privateKey);
+        ArrayList<String> allDatacenters = Lists.newArrayList(allDatacentersItr);
+
+        List<Instrumentation> instrumentations = new ArrayList<Instrumentation>();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        for (String zone : allDatacenters) {
+            String listInstrumentationsURL = String.format(LIST_INSTRUMENTATION_URL, zone, identity);
+            try {
+                String instrResp = executor().executeGetRequest(listInstrumentationsURL, identity, keyName, privateKey);
+                JsonNode node = objectMapper.readTree(instrResp);
+                Iterator<JsonNode> elements = node.elements();
+                while (elements.hasNext()) {
+                    JsonNode instrumentationNode = elements.next();
+
+                    Instrumentation instrumentation = new Instrumentation();
+                    instrumentation.setZone(zone);
+                    instrumentation.setId(instrumentationNode.get("id").asText());
+                    instrumentation.setModule(instrumentationNode.get("module").asText());
+                    instrumentation.setStat(instrumentationNode.get("stat").asText());
+
+                    instrumentations.add(instrumentation);
+                }
+            } catch (HttpException e) {
+                LOG.error("Unable to execute request", e);
+                throw new RuntimeException("Unable to execute request", e);
+            } catch (JsonProcessingException e) {
+                LOG.error("Unable to parse response", e);
+                throw new RuntimeException("Unable to parse response", e);
+            } catch (IOException e) {
+                LOG.error("Unable to parse response", e);
+                throw new RuntimeException("Unable to parse response", e);
+            }
         }
+        return instrumentations;
+    }
 
-        try {
-            TimeUnit.SECONDS.sleep(5);
-        } catch (InterruptedException e) {
-            LOG.error("Failed to wait", e);
-        }
-
+    /**
+     * Builds stats map from the instrumentation
+     *
+     * @param instrumentations
+     * @return stats map
+     */
+    private Map<String, String> buildStatsMap(List<Instrumentation> instrumentations) {
         Map<String, String> statsMap = new LinkedHashMap<String, String>();
-
-        //Get instrumentation values
-        for (Module module : modules) {
-            getInstrumentationValue(module, identity, keyName, privateKey);
-            Map<String, String> stringStringMap = buildStatsMap(module);
-            statsMap.putAll(stringStringMap);
+        for (Instrumentation instrumentation : instrumentations) {
+            String statName = String.format(METRIC_PATH, instrumentation.getModule(), instrumentation.getStat(), instrumentation.getZone());
+            statsMap.put(statName, instrumentation.getValue());
         }
         return statsMap;
     }
 
-    private Map<String, String> buildStatsMap(Module module) {
-        Map<String, String> statsMap = new LinkedHashMap<String, String>();
-        String moduleName = module.getName();
-        List<Stat> stats = module.getStat();
-        for (Stat stat : stats) {
-            if (stat.isEnabled()) {
-                Map<String, String> instrumentationValues = stat.getInstrumentationValues();
-                for (Map.Entry<String, String> entry : instrumentationValues.entrySet()) {
-                    String statName = String.format(METRIC_PATH, moduleName, stat.getLabel(), entry.getKey());
-                    statsMap.put(statName, entry.getValue());
+    /**
+     * For every instrumentation fetches its value from Joyent
+     *
+     * @param instrumentations
+     * @param identity
+     * @param keyName
+     * @param privateKey
+     */
+    private void populateInstrumentationValue(List<Instrumentation> instrumentations, String identity, String keyName, String privateKey) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        for (Instrumentation instrumentation : instrumentations) {
+
+            String instURL = String.format(GET_INSTRUMENTATION_URL, instrumentation.getZone(), identity, instrumentation.getId());
+            try {
+                //Get the instrumentation value
+                String instrResp = executor().executeGetRequest(instURL, identity, keyName, privateKey);
+                JsonNode node = objectMapper.readTree(instrResp);
+                JsonNode valueNode = node.get("value");
+                String instrValue = null;
+                if (valueNode.isValueNode()) {
+                    instrValue = getStringValue(valueNode);
+                } else {
+                    Iterator<JsonNode> elements = valueNode.elements();
+                    if (elements != null) {
+                        JsonNode jsonNode = elements.next();
+                        instrValue = getStringValue(jsonNode);
+                    }
                 }
+                instrumentation.setValue(instrValue);
+            } catch (HttpException e) {
+                LOG.error("Unable to execute request", e);
+                throw new RuntimeException("Unable to execute request", e);
+            } catch (JsonProcessingException e) {
+                LOG.error("Unable to parse response", e);
+                throw new RuntimeException("Unable to parse response", e);
+            } catch (IOException e) {
+                LOG.error("Unable to parse response", e);
+                throw new RuntimeException("Unable to parse response", e);
             }
         }
-        return statsMap;
     }
 
-    private void getInstrumentationValue(Module module, String identity, String keyName, String privateKey) {
-        List<Stat> stats = module.getStat();
-        ObjectMapper objectMapper = new ObjectMapper();
-        for (Stat stat : stats) {
-            if (stat.isEnabled()) {
-                Map<String, Integer> instrumentationIds = stat.getInstrumentationIds();
-                for (Map.Entry<String, Integer> instId : instrumentationIds.entrySet()) {
-                    String instURL = String.format(GET_INSTRUMENTATION_URL, instId.getKey(), identity, instId.getValue());
-                    try {
-                        //Get the instrumentation value
-                        String instrResp = executor().executeGetRequest(instURL, identity, keyName, privateKey);
-                        JsonNode node = objectMapper.readTree(instrResp);
-                        String instrValue = node.get("value").asText();
-                        stat.setInstrumentationValue(instId.getKey(), instrValue);
-
-                        //Delete the instrumentation
-                        String deleteURL = String.format(DELETE_INSTRUMENTATION_URL, instId.getKey(), identity, instId.getValue());
-                        executor().executeDeleteRequest(deleteURL, identity, keyName, privateKey);
-                    } catch (HttpException e) {
-                        LOG.error("Unable to execute request", e);
-                        throw new RuntimeException("Unable to execute request", e);
-                    } catch (JsonProcessingException e) {
-                        LOG.error("Unable to parse response", e);
-                        throw new RuntimeException("Unable to parse response", e);
-                    } catch (IOException e) {
-                        LOG.error("Unable to parse response", e);
-                        throw new RuntimeException("Unable to parse response", e);
-                    }
-                }
-            }
+    private String getStringValue(JsonNode valueNode) {
+        String instrValue;
+        if (valueNode.isDouble()) {
+            instrValue = String.valueOf(Math.round(valueNode.asDouble()));
+        } else {
+            instrValue = valueNode.asText();
         }
-
+        return instrValue;
     }
 
-    private void createInstrumentation(Module module, String identity, String keyName, String privateKey) {
-        Iterator<String> allDatacenters = getAllDatacenters(identity, keyName, privateKey);
-        ObjectMapper objectMapper = new ObjectMapper();
-        while (allDatacenters.hasNext()) {
-            String zone = allDatacenters.next();
-            String createURL = String.format(CREATE_INSTRUMENTATION_URL, zone, identity);
-            String moduleName = module.getName();
-            List<Stat> stats = module.getStat();
-            int noOfInstrumentations = 0;
-            for (Stat stat : stats) {
-                if (stat.isEnabled()) {
-                    if (noOfInstrumentations > instrumentationsToRun) {
-                        LOG.info("Executed maximum number of instrumentations configured. Ignoring remaining instrumentations if any");
-                        break;
-                    }
-                    Map<String, String> params = new HashMap<String, String>();
-                    params.put("module", moduleName);
-                    params.put("stat", stat.getName());
-                    try {
-                        String createInstrumentationResponse = executor().executePostRequest(createURL, params, identity, keyName, privateKey);
-                        JsonNode node = objectMapper.readTree(createInstrumentationResponse);
-                        int instrumentationId = node.get("id").asInt();
-                        stat.setInstrumentationId(zone, instrumentationId);
-                        noOfInstrumentations++;
-                    } catch (HttpException e) {
-                        LOG.error("Unable to execute request", e);
-                        throw new RuntimeException("Unable to execute request", e);
-                    } catch (JsonProcessingException e) {
-                        LOG.error("Unable to parse response", e);
-                        throw new RuntimeException("Unable to parse response", e);
-                    } catch (IOException e) {
-                        LOG.error("Unable to parse response", e);
-                        throw new RuntimeException("Unable to parse response", e);
-                    }
-                }
-            }
-        }
+    public static void main(String[] args) {
+        InstrumentationStats instrumentationStats = new InstrumentationStats();
+        Map<String, ?> stringMap = instrumentationStats.collectStats("rgiroti@appdynamics.com", "appd-joyent", "/home/satish/AppDynamics/Joyent/appd-joyent_id_rsa");
+        System.out.println(stringMap);
     }
 }
