@@ -78,6 +78,24 @@ This extension works only with the standalone machine agent.
 </monitor>
 ~~~~
 
+##Metrics
+
+###Instances
+Metrics related to instances
+
+| Name | Description |
+| ----- | ----- |
+| Custom Metrics\Joyent\Instances\<Zone>\<Instance ID>\Disk | Disk size  |
+| Custom Metrics\Joyent\Instances\<Zone>\<Instance ID>\Memory | Memory size  |
+
+
+###Instrumentation
+Metrics related to instrumentation. To see instrumentation metrics user should create instrumentations in Joyent portal.
+
+| Name | Description |
+| ----- | ----- |
+| Custom Metrics\Joyent\Instrumentation\<Module>\<stat>\<Zone> | Value of the instrumentation stat  |
+
 
 
 ##Contributing
