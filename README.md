@@ -108,7 +108,7 @@ Metrics related to instrumentation. To see instrumentation metrics user should c
 
 | Name | Description |
 | ----- | ----- |
-| Custom Metrics/Joyent/Instrumentation/{Module}/{Stat}/{Zone}/{UUID} | Value of the instrumentation stat  |
+| Custom Metrics/Joyent/Instrumentation/{Module}/{Stat}/{Zone}/{UUID} | Value of the instrumentation  |
 
 Module : Name of the module <br>
 Stat : Name of the stat <br>
