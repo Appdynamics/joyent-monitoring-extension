@@ -87,6 +87,20 @@ Metrics related to instances
 | ----- | ----- |
 | Custom Metrics/Joyent/Instances/{Zone}/{Instance ID}/Disk | Disk size  |
 | Custom Metrics/Joyent/Instances/{Zone}/{Instance ID}/Memory | Memory size  |
+| Custom Metrics/Joyent/Instances/{Zone}/{Instance ID}/State | State of the machine  |
+
+Possible states
+
+| State | Desc |
+|----- | ----- |
+| 0 | Provisioning |
+| 1 | failed |
+| 2 | Running |
+| 3 | Stopping |
+| 4 | Stopped |
+| 5 | Deleted |
+| 6 | offline |
+| 7 | Undefined |
 
 
 ###Instrumentation
@@ -94,9 +108,12 @@ Metrics related to instrumentation. To see instrumentation metrics user should c
 
 | Name | Description |
 | ----- | ----- |
-| Custom Metrics/Joyent/Instrumentation/{Module}/{stat}/{Zone} | Value of the instrumentation stat  |
+| Custom Metrics/Joyent/Instrumentation/{Module}/{stat}/{Zone}/{UUID} | Value of the instrumentation stat  |
 
-
+Modele : Name of the module
+stat : Name of the stat
+Zone : Zone in which the machine recides
+UUID : UUID of the machine
 
 ##Contributing
 
