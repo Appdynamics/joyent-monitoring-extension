@@ -6,6 +6,7 @@ public class Instrumentation {
     private String module;
     private String stat;
     private String value;
+    private String uuid;
 
     public String getId() {
         return id;
@@ -45,5 +46,13 @@ public class Instrumentation {
 
     public void setValue(String value) {
         this.value = value;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
     }
 }

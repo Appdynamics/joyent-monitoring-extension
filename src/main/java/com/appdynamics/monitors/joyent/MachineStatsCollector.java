@@ -35,6 +35,7 @@ public class MachineStatsCollector extends StatsCollector {
                     String metricName = String.format(METRIC_PATH, zone, name);
                     instanceStatsMap.put(metricName + "Memory", instanceNode.get("memory").asInt());
                     instanceStatsMap.put(metricName + "Disk", instanceNode.get("disk").asInt());
+                    instanceStatsMap.put(metricName + "State", State.getStateInt(instanceNode.get("state").asText()));
                 }
             }
         } catch (Exception e) {
@@ -42,5 +43,28 @@ public class MachineStatsCollector extends StatsCollector {
             //Ignore and continue
         }
         return instanceStatsMap;
+    }
+
+    private enum State {
+        Provisioning("Provisioning"), Failed("failed"), Running("Running"), Stopping("Stopping"), Stopped("Stopped"), Deleted("Deleted"), Offline("offline"), UnDefined("Undefined");
+        private String state;
+
+        State(String state) {
+            this.state = state;
+        }
+        
+        public String getState() {
+            return state;
+        }
+        
+        public static int getStateInt(String state) {
+            State[] statesEnum = State.values();
+            for(State stateEnum : statesEnum) {
+                if(stateEnum.getState().equalsIgnoreCase(state)) {
+                    return stateEnum.ordinal();
+                }
+            }
+            return UnDefined.ordinal();
+        }
     }
 }

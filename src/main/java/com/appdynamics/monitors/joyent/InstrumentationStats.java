@@ -19,7 +19,7 @@ public class InstrumentationStats extends StatsCollector {
 
     private static final String LIST_INSTRUMENTATION_URL = "https://%s.api.joyentcloud.com/%s/analytics/instrumentations";
     private static final String GET_INSTRUMENTATION_URL = "https://%s.api.joyentcloud.com/%s/analytics/instrumentations/%s/value/raw";
-    private static final String METRIC_PATH = "Custom Metrics|Joyent|Instrumentation|%s|%s|%s"; //Module Name|Stat Name|Zone
+    private static final String METRIC_PATH = "Custom Metrics|Joyent|Instrumentation|%s|%s|%s|%s"; //Module Name|Stat Name|Zone|UUID
 
     @Override
     public Map<String, ?> collectStats(String identity, String keyName, String privateKey) {
@@ -69,7 +69,10 @@ public class InstrumentationStats extends StatsCollector {
                     instrumentation.setId(instrumentationNode.get("id").asText());
                     instrumentation.setModule(instrumentationNode.get("module").asText());
                     instrumentation.setStat(instrumentationNode.get("stat").asText());
-
+                    Iterator<JsonNode> zoneElement = instrumentationNode.get("predicate").get("eq").elements();
+                    zoneElement.next();
+                    JsonNode instanceUUID = zoneElement.next();
+                    instrumentation.setUuid(instanceUUID.asText());
                     instrumentations.add(instrumentation);
                 }
             } catch (HttpException e) {
@@ -95,7 +98,7 @@ public class InstrumentationStats extends StatsCollector {
     private Map<String, String> buildStatsMap(List<Instrumentation> instrumentations) {
         Map<String, String> statsMap = new LinkedHashMap<String, String>();
         for (Instrumentation instrumentation : instrumentations) {
-            String statName = String.format(METRIC_PATH, instrumentation.getModule(), instrumentation.getStat(), instrumentation.getZone());
+            String statName = String.format(METRIC_PATH, instrumentation.getModule(), instrumentation.getStat(), instrumentation.getZone(), instrumentation.getUuid());
             statsMap.put(statName, instrumentation.getValue());
         }
         return statsMap;
