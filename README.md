@@ -110,10 +110,10 @@ Metrics related to instrumentation. To see instrumentation metrics user should c
 | ----- | ----- |
 | Custom Metrics/Joyent/Instrumentation/{Module}/{stat}/{Zone}/{UUID} | Value of the instrumentation stat  |
 
-Modele : Name of the module
-stat : Name of the stat
-Zone : Zone in which the machine recides
-UUID : UUID of the machine
+Modele : Name of the module <br>
+stat : Name of the stat <br>
+Zone : Zone in which the machine recides <br>
+UUID : UUID of the machine <br>
 
 ##Contributing
 
