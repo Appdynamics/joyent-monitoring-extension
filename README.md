@@ -108,10 +108,10 @@ Metrics related to instrumentation. To see instrumentation metrics user should c
 
 | Name | Description |
 | ----- | ----- |
-| Custom Metrics/Joyent/Instrumentation/{Module}/{stat}/{Zone}/{UUID} | Value of the instrumentation stat  |
+| Custom Metrics/Joyent/Instrumentation/{Module}/{Stat}/{Zone}/{UUID} | Value of the instrumentation stat  |
 
-Modele : Name of the module <br>
-stat : Name of the stat <br>
+Module : Name of the module <br>
+Stat : Name of the stat <br>
 Zone : Zone in which the machine resides <br>
 UUID : UUID of the machine <br>
 
