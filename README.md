@@ -115,6 +115,8 @@ Stat : Name of the stat <br>
 Zone : Zone in which the machine resides <br>
 UUID : UUID of the machine <br>
 
+This extension will fetch all the instrumentation available in the Joyent and tries to get each instrumentation value. In this process it might throw com.appdynamics.monitors.joyent.ResourceNotFoundException when the instrumentation is deleted by Joyent. In the next run the extension will get latest intrumentations if any from Joyent.
+
 ##Contributing
 
 Always feel free to fork and contribute any changes directly via [GitHub](https://github.com/Appdynamics/joyent-monitoring-extension).
