@@ -112,7 +112,7 @@ Metrics related to instrumentation. To see instrumentation metrics user should c
 
 Modele : Name of the module <br>
 stat : Name of the stat <br>
-Zone : Zone in which the machine recides <br>
+Zone : Zone in which the machine resides <br>
 UUID : UUID of the machine <br>
 
 ##Contributing
