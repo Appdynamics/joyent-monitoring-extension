@@ -87,6 +87,20 @@ Metrics related to instances
 | ----- | ----- |
 | Custom Metrics/Joyent/Instances/{Zone}/{Instance ID}/Disk | Disk size  |
 | Custom Metrics/Joyent/Instances/{Zone}/{Instance ID}/Memory | Memory size  |
+| Custom Metrics/Joyent/Instances/{Zone}/{Instance ID}/State | State of the machine  |
+
+Possible states
+
+| State | Desc |
+|----- | ----- |
+| 0 | Provisioning |
+| 1 | failed |
+| 2 | Running |
+| 3 | Stopping |
+| 4 | Stopped |
+| 5 | Deleted |
+| 6 | offline |
+| 7 | Undefined |
 
 
 ###Instrumentation
@@ -94,9 +108,14 @@ Metrics related to instrumentation. To see instrumentation metrics user should c
 
 | Name | Description |
 | ----- | ----- |
-| Custom Metrics/Joyent/Instrumentation/{Module}/{stat}/{Zone} | Value of the instrumentation stat  |
+| Custom Metrics/Joyent/Instrumentation/{Module}/{Stat}/{Zone}/{UUID} | Value of the instrumentation  |
 
+Module : Name of the module <br>
+Stat : Name of the stat <br>
+Zone : Zone in which the machine resides <br>
+UUID : UUID of the machine <br>
 
+This extension will fetch all the instrumentation available in the Joyent and tries to get each instrumentation value. In this process it might throw com.appdynamics.monitors.joyent.ResourceNotFoundException when the instrumentation is deleted by Joyent. In the next run the extension will get latest intrumentations if any from Joyent.
 
 ##Contributing
 
@@ -104,7 +123,7 @@ Always feel free to fork and contribute any changes directly via [GitHub](https:
 
 ##Community
 
-Find out more in the [AppSphere]() community.
+Find out more in the [AppSphere](http://community.appdynamics.com/t5/AppDynamics-eXchange/Joyent-Monitoring-Extension/idi-p/8348) community.
 
 ##Support
 
